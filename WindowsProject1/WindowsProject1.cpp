@@ -303,6 +303,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             InvalidateRect(hWnd, NULL, TRUE);
             break;
         }
+        case 0x51:
+        {
+            SetWindowPos(hWnd, 0, 0, 0, GetSystemMetrics(SM_CXFULLSCREEN), GetSystemMetrics(SM_CYFULLSCREEN), NULL);
+            InvalidateRect(hWnd, NULL, TRUE);
+            break;
+        }
         
         default: 
             break;
