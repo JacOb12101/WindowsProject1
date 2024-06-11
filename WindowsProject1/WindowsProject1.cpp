@@ -338,59 +338,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            /*
-            // TODO: Add any drawing code that uses hdc here...
-           
-            //HPEN hPenOld;
-
-            // Draw a red line
-            //HPEN hLinePen;
-            
-            //hLinePen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
-            //hPenOld = (HPEN)SelectObject(hdc, hLinePen);
-
-            DRAW HERE**
-
-            //SelectObject(hdc, hPenOld);
-            //DeleteObject(hLinePen);
-
-            */
-
-            /*
-            POINT p;
-            LPPOINT lp = (LPPOINT) &p;
-            int maxlen = 100;
-            char* s = (char*)malloc(maxlen);
-            int slen;
-
-            MoveToEx(hdc, 100, 100, lp);
-            LineTo(hdc, 500, 250);
-
-            slen = sprintf_s((char*) s, maxlen,  "%d %d", lp->x, lp->y);
-            TextOutA(hdc, 200, 200, (LPCSTR)s, slen);
-
-            MoveToEx(hdc, 100, 100, lp);
-
-            slen = sprintf_s((char*)s, maxlen, "%d %d", lp->x, lp->y);
-            TextOutA(hdc, 200, 250, (LPCSTR)s, slen);
-
-
-            free(s);
-            */                                      
-            
-
-
-
-
-            //rect(hdc, 100, 100, 200, 100);
-
-
-            
-            
-            
 
             HPEN hPenOld;
-
             HPEN hLinePen;
 
             hLinePen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
@@ -398,57 +347,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             convertAngleToVec(angle, &view);
 
-            
-
-
-            myCoord camera;
-            camera.x = 200;
-            camera.y = 200;
-
-
-
-            //camera
-            rect(hdc, camera.x, camera.y, 2, 2);
-            SelectObject(hdc, hPenOld);
-            DeleteObject(hLinePen);
-
-            hLinePen = CreatePen(PS_SOLID, 1, RGB(0, 255, 0));
-            hPenOld = (HPEN)SelectObject(hdc, hLinePen);
-
-
-            myLine norm = drawNormal(100, 50, view);
-            MoveToEx(hdc, convertToScreen(camera, norm.c1).x, convertToScreen(camera, norm.c1).y, NULL);
-            LineTo(hdc, convertToScreen(camera, norm.c2).x, convertToScreen(camera, norm.c2).y);
-
-            SelectObject(hdc, hPenOld);
-            DeleteObject(hLinePen);
-
-            hLinePen = CreatePen(PS_SOLID, 1, RGB(0, 0, 255));
-            hPenOld = (HPEN)SelectObject(hdc, hLinePen);
 
 
 
 
-            myCoord point;
-            point.x = test;
-            point.y = 100;
-            rect(hdc, test, 100, 10, 10);
 
-
-            MoveToEx(hdc, point.x, point.y, NULL);
-            LineTo(hdc, camera.x, camera.y);
-
-            myLine l;
-            l.c1 = convertToCalc(camera, { point.x, point.y });
-            l.c2 = convertToCalc(camera, camera);
-
-            myCoord inter;
-            if (intersect(norm, l, &inter)) {
-                rect(hdc, convertToScreen(camera, inter).x, convertToScreen(camera, inter).y, 2, 2);
-            }
-            else {
-                Arc(hdc, 100, 100, 200, 200, 0, 0, 0, 0);
-            }
 
             SelectObject(hdc, hPenOld);
             DeleteObject(hLinePen);
