@@ -197,11 +197,19 @@ myCoord elemList[10];
 // view is a unit vector
 // vpl is view port length, how wide the perspective is
 // cVal is far away the normal line is from the camera, strength of perspective
-myLine drawNormal(float vpl, int cVal, myVector view) {
+// sets mid to midpoint of normal for screen positioning calcs
+myLine drawNormal(float vpl, int cVal, myVector view, myCoord *mid, float shift) {
     myCoord midpoint;
+    float x = cVal * view.x + shift;
+    float y = cVal * view.y + 0;
 
-    midpoint.x = cVal * view.x + 0;
-    midpoint.y = cVal * view.y + 0;
+    midpoint.x = x;
+    midpoint.y = y;
+
+    mid->x = x;
+    mid->y = y;
+    
+
 
     float slope = (-view.x) / view.y;
 
@@ -223,6 +231,18 @@ myLine drawNormal(float vpl, int cVal, myVector view) {
 
     return n;
 }
+
+
+
+float distanceTo(myCoord c1, myCoord c2) {
+    float dist = sqrt((c1.x - c2.x) * (c1.x - c2.x) + (c1.y - c2.y) * (c1.y - c2.y));
+    if (c2.x < c1.x) {
+        dist *= -1;
+    }
+    return dist;
+}
+
+
 
 // converts imaginary coordinate system into api top left system
 // origin is in top left format, loc is in calculation format
@@ -253,7 +273,7 @@ void convertAngleToVec(float angle, myVector *vec) {
 
 
 
-int test = 500;
+int shift = 0;
 
 
 
@@ -281,13 +301,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         switch (wParam) {
         case VK_RIGHT:
         {
-            test = test + 10;
+            shift += 5;
             InvalidateRect(hWnd, NULL, TRUE);
             break;
         }
         case VK_LEFT:
         {
-            test = test - 10;
+            shift -= 5;
             InvalidateRect(hWnd, NULL, TRUE);
             break;
         }
@@ -346,6 +366,47 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             hPenOld = (HPEN)SelectObject(hdc, hLinePen);
 
             convertAngleToVec(angle, &view);
+
+            // sets camera to midpoint of window
+            RECT window;
+            GetWindowRect(hWnd, &window);
+            myCoord camera;
+            camera.x = (window.right - window.left) / 2;
+            camera.y = (window.bottom - window.top) / 2;
+            //camera.x += shift;
+            //rect(hdc, camera.x, camera.y, 2, 2);
+
+            //the following code should become a method
+
+            // LINES ON THE 2D PLANE
+            myCoord midpoint;
+            myLine normal = drawNormal(window.right - window.left, 100, view, &midpoint, shift);
+            myLine testLine{
+                {-100, 200},
+                {100, 200}
+            };
+            myLine testLinec1ToCamera{
+                {testLine.c1},
+                {0 + shift,0}
+            };
+            myLine testLinec2ToCamera{
+                {testLine.c2},
+                {0 + shift,0}
+            };
+
+            myCoord c1Intersect;
+            myCoord c2Intersect;
+            intersect(testLinec1ToCamera, normal, &c1Intersect);
+            intersect(testLinec2ToCamera, normal, &c2Intersect);
+
+            // TO DO: determine the +/- on the distances from the midpoint 
+            float distance1 = distanceTo(midpoint, c1Intersect);
+            float distance2 = distanceTo(midpoint, c2Intersect);
+
+
+            MoveToEx(hdc, camera.x + distance1, camera.y, NULL);
+            LineTo(hdc, camera.x + distance2, camera.y);
+
 
 
 
