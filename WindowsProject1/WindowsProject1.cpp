@@ -126,11 +126,9 @@ void rect(HDC hdc, int sx, int sy, int lx, int ly) {
     LineTo(hdc, sx + lx, sy + ly);
     LineTo(hdc, sx, sy + ly);
     LineTo(hdc, sx, sy);
-
-
-
-
 }
+
+
 
 
 typedef struct {
@@ -148,118 +146,38 @@ typedef struct {
     myCoord c2;
 } myLine;
 
-
-
-// determines intersection point given 2 lines
-
-// right now does not handle no intersection
-
-static bool intersect(myLine l1, myLine l2, myCoord *inter) {
-    float dx1 = l1.c2.x - l1.c1.x;
-    float dx2 = l2.c2.x - l2.c1.x;
-    float dy1 = l1.c2.y - l1.c1.y;
-    float dy2 = l2.c2.y - l2.c1.y;
-    float t1;
-    float t2;
-
-    t1 = (dx2 * (l2.c1.y - l1.c1.y) + dy2 * (l1.c1.x - l2.c1.x)) / (dx2 * dy1 - dy2 * dx1);
-    t2 = (dx1 * (l1.c1.y - l2.c1.y) + dy1 * (l2.c1.x - l1.c1.x)) / (dx1 * dy2 - dy1 * dx2);
-    /*
-    if (l1.c1.x + t1 * dx1 == l2.c1.x + t2 * dx2 && l1.c1.y + t1 * dy1 == l2.c1.y + t2 * dy2) {
-        inter->x = l1.c1.x + t1 * dx1;
-        inter->y = l1.c1.y + t1 * dy1;
-        return true;
-    }
-    */
-    
-    if (t1 >= 0 && t1 <= 1 && t2 >= 0 && t2 <= 1) {
-        inter->x = l1.c1.x + t1 * dx1;
-        inter->y = l1.c1.y + t1 * dy1;
-        return true;
-    }
-    
-
-    
-
-    return false;
-    
-
-}
-
-
-myCoord elemList[10];
+typedef struct {
+    float x;
+    float y;
+    float z;
+} my3DCoord;
 
 
 
-// returns perpendicular line to camera
-// assumes camera is stuck at (0,0)
-// to fix camera, + 0 to + x or y of initial position
-// view is a unit vector
-// vpl is view port length, how wide the perspective is
-// cVal is far away the normal line is from the camera, strength of perspective
-// sets mid to midpoint of normal for screen positioning calcs
-myLine drawNormal(float vpl, int cVal, myVector view, myCoord *mid, float shift) {
-    myCoord midpoint;
-    float x = cVal * view.x + shift;
-    float y = cVal * view.y + 0;
-
-    midpoint.x = x;
-    midpoint.y = y;
-
-    mid->x = x;
-    mid->y = y;
-    
-
-
-    float slope = (-view.x) / view.y;
-
-    float xDist = (vpl / 2) / (float) sqrt(1 + slope * slope);
-
-    float yDist = slope * xDist;
-
-    myCoord c1;
-    myCoord c2;
-    myLine n;
-
-    c1.x = midpoint.x - xDist;
-    c1.y = midpoint.y - yDist;
-    c2.x = midpoint.x + xDist;
-    c2.y = midpoint.y + yDist;
-
-    n.c1 = c1;
-    n.c2 = c2;
-
-    return n;
-}
-
-
-
-float distanceTo(myCoord c1, myCoord c2) {
-    float dist = sqrt((c1.x - c2.x) * (c1.x - c2.x) + (c1.y - c2.y) * (c1.y - c2.y));
-    if (c2.x < c1.x) {
-        dist *= -1;
-    }
-    return dist;
-}
-
-
-
-// converts imaginary coordinate system into api top left system
-// origin is in top left format, loc is in calculation format
-myCoord convertToScreen(myCoord origin, myCoord loc) {
+myCoord getScreenCoords(my3DCoord origin, my3DCoord point, float cVal, myCoord center) {
     myCoord c;
-    c.x = origin.x + loc.x;
-    c.y = origin.y - loc.y;
+
+    float ratio = cVal / (point.z - origin.z);
+
+    c.x = center.x + ((point.x - origin.x) * ratio);
+    c.y = center.y - ((point.y - origin.y) * ratio);
+
+
     return c;
 }
-// converts screen system to imaginary system
-// origin is in top left format, loc is in top left format
-myCoord convertToCalc(myCoord origin, myCoord loc) {
-    myCoord c;
-    c.x = loc.x - origin.x;
-    c.y = origin.y - loc.y;
-    return c;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 float angle = M_PI / 2;
 myVector view;
@@ -273,8 +191,9 @@ void convertAngleToVec(float angle, myVector *vec) {
 
 
 
-int shift = 0;
-
+int xShift = 0;
+int yShift = 0;
+int zShift = 0;
 
 
 
@@ -301,13 +220,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         switch (wParam) {
         case VK_RIGHT:
         {
-            shift += 5;
+            xShift += 5;
             InvalidateRect(hWnd, NULL, TRUE);
             break;
         }
         case VK_LEFT:
         {
-            shift -= 5;
+            xShift -= 5;
+            InvalidateRect(hWnd, NULL, TRUE);
+            break;
+        }
+        case VK_UP:
+        {
+            zShift += 5;
+            InvalidateRect(hWnd, NULL, TRUE);
+            break;
+        }
+        case VK_DOWN:
+        {
+            zShift -= 5;
             InvalidateRect(hWnd, NULL, TRUE);
             break;
         }
@@ -329,7 +260,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             InvalidateRect(hWnd, NULL, TRUE);
             break;
         }
-        
+        case 0x57:
+        {
+            yShift += 5;
+            InvalidateRect(hWnd, NULL, TRUE);
+            break;
+        }
+        case 0x53:
+        {
+            yShift -= 5;
+            InvalidateRect(hWnd, NULL, TRUE);
+            break;
+        }
+
+
+
+
         default: 
             break;
         
@@ -365,50 +311,106 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             hLinePen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
             hPenOld = (HPEN)SelectObject(hdc, hLinePen);
 
-            convertAngleToVec(angle, &view);
 
-            // sets camera to midpoint of window
             RECT window;
             GetWindowRect(hWnd, &window);
-            myCoord camera;
-            camera.x = (window.right - window.left) / 2;
-            camera.y = (window.bottom - window.top) / 2;
-            //camera.x += shift;
-            //rect(hdc, camera.x, camera.y, 2, 2);
+            myCoord drawOrigin;
+            drawOrigin.x = (window.right - window.left) / 2;
+            drawOrigin.y = (window.bottom - window.top) / 2;
+            rect(hdc, drawOrigin.x, drawOrigin.y, 3, 3);
 
-            //the following code should become a method
 
-            // LINES ON THE 2D PLANE
-            myCoord midpoint;
-            myLine normal = drawNormal(window.right - window.left, 100, view, &midpoint, shift);
-            myLine testLine{
-                {-100, 200},
-                {100, 200}
+            my3DCoord camera{
+                0 + xShift,
+                0 + yShift,
+                0 + zShift
             };
-            myLine testLinec1ToCamera{
-                {testLine.c1},
-                {0 + shift,0}
+            my3DCoord c1{
+                200,
+                200,
+                200
             };
-            myLine testLinec2ToCamera{
-                {testLine.c2},
-                {0 + shift,0}
+            my3DCoord c2{
+                -200,
+                200,
+                200
             };
+            my3DCoord c3{
+                -200,
+                -200,
+                200
+            };
+            my3DCoord c4{
+                200,
+                -200,
+                200
+            };
+            my3DCoord c5{
+                200,
+                200,
+                400
+            }; 
+            my3DCoord c6{
+                -200,
+                200,
+                400
+            }; 
+            my3DCoord c7{
+                -200,
+                -200,
+                400
+            }; 
+            my3DCoord c8{
+                200,
+                -200,
+                400
+            };
+            myCoord c1_projection = getScreenCoords(camera, c1, 50, drawOrigin);
+            myCoord c2_projection = getScreenCoords(camera, c2, 50, drawOrigin);
+            myCoord c3_projection = getScreenCoords(camera, c3, 50, drawOrigin);
+            myCoord c4_projection = getScreenCoords(camera, c4, 50, drawOrigin);
+            myCoord c5_projection = getScreenCoords(camera, c5, 50, drawOrigin);
+            myCoord c6_projection = getScreenCoords(camera, c6, 50, drawOrigin);
+            myCoord c7_projection = getScreenCoords(camera, c7, 50, drawOrigin);
+            myCoord c8_projection = getScreenCoords(camera, c8, 50, drawOrigin);
 
-            myCoord c1Intersect;
-            myCoord c2Intersect;
-            intersect(testLinec1ToCamera, normal, &c1Intersect);
-            intersect(testLinec2ToCamera, normal, &c2Intersect);
 
-            // TO DO: determine the +/- on the distances from the midpoint 
-            float distance1 = distanceTo(midpoint, c1Intersect);
-            float distance2 = distanceTo(midpoint, c2Intersect);
+            MoveToEx(hdc, c1_projection.x, c1_projection.y, NULL);
+            LineTo(hdc, c2_projection.x, c2_projection.y);
+
+            LineTo(hdc, c3_projection.x, c3_projection.y);
+            LineTo(hdc, c4_projection.x, c4_projection.y);
+            LineTo(hdc, c1_projection.x, c1_projection.y);
+
+            LineTo(hdc, c5_projection.x, c5_projection.y);
+            LineTo(hdc, c6_projection.x, c6_projection.y);
+            LineTo(hdc, c7_projection.x, c7_projection.y);
+            LineTo(hdc, c8_projection.x, c8_projection.y);
+            LineTo(hdc, c5_projection.x, c5_projection.y);
+
+            MoveToEx(hdc, c2_projection.x, c2_projection.y, NULL);
+            LineTo(hdc, c6_projection.x, c6_projection.y);
+
+            MoveToEx(hdc, c3_projection.x, c3_projection.y, NULL);
+            LineTo(hdc, c7_projection.x, c7_projection.y);
+
+            MoveToEx(hdc, c4_projection.x, c4_projection.y, NULL);
+            LineTo(hdc, c8_projection.x, c8_projection.y);
+
+            
 
 
-            MoveToEx(hdc, camera.x + distance1, camera.y, NULL);
-            LineTo(hdc, camera.x + distance2, camera.y);
 
-
-
+            /*
+            rect(hdc, c1_projection.x, c1_projection.y, 3, 3);
+            rect(hdc, c2_projection.x, c2_projection.y, 3, 3);
+            rect(hdc, c3_projection.x, c3_projection.y, 3, 3);
+            rect(hdc, c4_projection.x, c4_projection.y, 3, 3);
+            rect(hdc, c5_projection.x, c5_projection.y, 3, 3);
+            rect(hdc, c6_projection.x, c6_projection.y, 3, 3);
+            rect(hdc, c7_projection.x, c7_projection.y, 3, 3);
+            rect(hdc, c8_projection.x, c8_projection.y, 3, 3);
+            */
 
 
 
